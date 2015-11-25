@@ -1,0 +1,13 @@
+Package: denboer2009
+Type: Package
+Title: Den Boer (2009) pre-normalized expression profiles
+Version: 1.0
+Date: 2015-03-04
+Author: Jacques van Helden <Jacques.van-Helden@univ-amu.fr>
+Maintainer: Jacques van Helden <Jacques.van-Helden@univ-amu.fr>
+Description: Pre-normalized (affy::rma) expression values for the transcriptome microarray profiles from Den Boer et al. (2009)
+Depends: R (>= 3.0.2)
+License: Free
+LazyData: true
+Suggests: knitr
+VignetteBuilder: knitr
