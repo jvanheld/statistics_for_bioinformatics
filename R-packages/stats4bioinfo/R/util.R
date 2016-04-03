@@ -185,6 +185,4 @@ shadeTails <- function(fun,
     verbose("Shading lower tail")
     shadeArea(fun, xlim, shade.to=-q, add=TRUE, draw.curve=FALSE,...)
   }
-  
-  
 }

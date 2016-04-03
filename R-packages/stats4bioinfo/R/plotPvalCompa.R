@@ -64,6 +64,9 @@ plotPvalCompa <- function (frame.to.plot,
   
   result <- list()
   
+  ## Omit NA values from the input table
+  frame.to.plot <- na.omit(frame.to.plot)
+  
   score1 <- frame.to.plot[,1]
   score2 <- frame.to.plot[,2]
   
@@ -120,6 +123,8 @@ plotPvalCompa <- function (frame.to.plot,
          pch=compa.pch,
          cex=plot.cex,
          ...)
+    
+    abline(a=0, b=1) ## Plot the diagonal
     
     ## Mark the alpha thresholds
     if (plot.colors) {

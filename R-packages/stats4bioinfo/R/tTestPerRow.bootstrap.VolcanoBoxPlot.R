@@ -15,14 +15,17 @@
 #' @param plot.sig.boxes=TRUE Draw boxplots for the significance (Y axis)
 #' @param plot.effect.boxes=TRUE Draw boxplots for the effect size (X axis)
 #' @param plot.rectangles=TRUE  Draw inter-quartile rectangles, i.e. rectangles whose corners are defined by the first and third quartiles, on both axes.
+#' @param density.colors=FALSE Automatically set the colors according to feature status and local density in the Volcano space.
 #' @param col.boxplots='#888888' Color(s) for the boxplots. can be either a single value (same color for all boxplots), or a vector of the same length as the numer of multiple tests (rows of the result tables). 
-#' @param col.positive='#008800' Color to highlight significant points (called positive).
+#' @param col.positive='#4455DD' Color to highlight significant points (called positive).
 #' @param col.lines='blue'  Color for the line highlighting the significance threshold
+#' @param col.alpha="darkred" Color for the line highlighting the significance threshold.
 #' @param col.grid=#BBBBBB   Grid color
 #' @param lty.positive=3   Line types for the positive tests.
 #' @param lty.negative=1   Line types for the negative tests.
-#' @param lwd.rectangles= 1 Line width for the IQR rectangles. Set to 0 to avoid drawing rectangle.
-#' @param lwd.iqr= 3 Line width for the inter-quartile bars (thick bars from Q1 to Q"). Set to 0 to avoid drawing inter-quartile bars
+#' @param lty.alpha="dashed" Line type for the horizontal line denoting the alpha theshold.
+#' @param lwd.rectangles=1 Line width for the IQR rectangles. Set to 0 to avoid drawing rectangle.
+#' @param lwd.iqr=3 Line width for the inter-quartile bars (thick bars from Q1 to Q"). Set to 0 to avoid drawing inter-quartile bars
 #' @param lwd.extent=1 Line width for the extent lines Set to 0 to avoid drawing median bars
 #' @param lwd.support.quantile=1 Line width for the ticks denoting support quantiles, i.e. the significance corresponding to the specified support quantile. 
 #' @param support.ticks=0.03 Width of the ticks denoting the support cutoff. Set to 0 to avoid drawing support cutoff.
@@ -122,12 +125,15 @@ tTestPerRow.bootstrap.VolcanoBoxPlot <- function(
   xlab="Effect size",
   ylab=paste(sep="", "-log10(", control.type, ")"),
   # xlab=expression(hat(delta) == bar(X)[1]-bar(X)[2]),
+  density.colors=FALSE,
   col.boxplots = '#888888',
-  col.positive='#008800',
+  col.positive='#4455DD',
   col.grid = '#BBBBBB',
   col.lines = 'blue',
+  col.alpha = "darkred",
   lty.positive="solid",
   lty.negative="solid",
+  lty.alpha = "dashed",
   lwd.rectangles= 1,
   lwd.iqr=3,
   lwd.extent=1,
@@ -183,19 +189,39 @@ tTestPerRow.bootstrap.VolcanoBoxPlot <- function(
   ## Identify the positive tests
   control.column <- paste(sep="", control.type, ".support")
   positive <- ttpr.result$stats.per.row[,control.column] >= support.threshold
+  ttpr.result$stats.per.row$status <- "negative"
+  ttpr.result$stats.per.row$status[positive] <- "positive"
+  
   # table(positive)
   order <- order(ttpr.result$stats.per.row[,control.column], decreasing=TRUE)
 
+  ################################################################
   ## Define point colors and shapes. 
-  ## Note: the attributes col.boxplots and lty.points can either be either 
-  ## a single value (for all points) or a  vector with one user-specified 
-  ## color per point.
-  ttpr.result$stats.per.row$color <- col.boxplots
-  if (length(col.boxplots) != nrow(ttpr.result$stats.per.row)) {
-    if (!is.null(col.positive)) {
-      ttpr.result$stats.per.row[positive, "color"] <- col.positive
+  
+  if (density.colors) {
+    ## Status- and density-specific colors
+    ttpr.result$stats.per.row$color <- featureColors(
+      feature.status=ttpr.result$stats.per.row$status,
+      positions=data.frame(
+        x=unlist(x.values$effect.size.median),
+        y=unlist(y.values[, paste(sep="", "mlog10.",control.type, ".median")]))
+    )
+    
+  } else {
+    ## Status-specific colors
+    
+    ## Note: the attributes col.boxplots and lty.points can either be either 
+    ## a single value (for all points) or a  vector with one user-specified 
+    ## color per point.
+    ttpr.result$stats.per.row$color <- col.boxplots
+    if (length(col.boxplots) != nrow(ttpr.result$stats.per.row)) {
+      if (!is.null(col.positive)) {
+        ttpr.result$stats.per.row[positive, "color"] <- col.positive
+      }
     }
   }
+  
+  ## Status-specific ine types
   # table(ttpr.result$stats.per.row$color)
   ttpr.result$stats.per.row$lty <- lty.negative
   if (!is.null(lty.positive)) {
@@ -295,7 +321,7 @@ tTestPerRow.bootstrap.VolcanoBoxPlot <- function(
   
   abline(v=0,col="black", lty="dashed")
 #  abline(h=0,col="black", lty="dashed")
-  abline(h=-log10(ttpr.result$alpha), col=col.lines, lty="solid")
+  abline(h=-log10(alpha),col=col.alpha, lwd=1, lty=lty.alpha) ## Horizontal line to denote the significance threshold
   
   ## Plot the legend
   if (!is.null(legend.corner)) {

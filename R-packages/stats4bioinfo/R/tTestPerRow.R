@@ -30,7 +30,9 @@
 #' 
 #' @return
 #' A data.frame with one row per test result, and one column per statistics.
+#' 
 #' @examples
+#' 
 #' ## Load example data set from Den Boer, 2009
 #' library(denboer2009)
 #' data(denboer2009.expr)     ## Load expression table
@@ -172,7 +174,6 @@ tTestPerRow <- function (x,
   means.diff <- m1.est - m2.est
   ##  hist(means.diff,breaks=50)
 
-  
   ## Pooled variance and Cohen's effect size "d"
   var.pooled <- ((n1-1)*var1.est + (n2-1)*var2.est) / (n1+n2-2)
   sd.pooled <- sqrt(var.pooled)
@@ -184,7 +185,7 @@ tTestPerRow <- function (x,
     ## Student test (assumption of equal variance)
     diff.stder <- (sd.pooled * (sqrt(1/n1+1/n2)))
     
-    ## Calculate degrees of freedom with Students formula
+    ## Calculate degrees of freedom with Student formula
     df <- (n1 + n2 - 2)
 
   } else {

@@ -6,12 +6,13 @@
 #' @param ttpr.result Must be the result obtained with tTestPerRow()
 #' @param control.type="fdr"   Type of control (supported: "fdr", "e.value", "p.value")
 #' @param alpha=0.05    Alpha threshold for the control of false positives
-#' @param ... Additional parameters are passed to plot()
+#' @param plot.ci=FALSE if TRUE, draw confidence intervals for each feature of the volcano plot.
+#' @param ... Additional parameters are passed to VolcanoPlot()
 #' @return no return object
 #' @examples
 #' ## Parameters to generate and analyse the simulated dataset
-#' n.h1 <- 100 ## Number of rows under H1
-#' n.h0 <- 100 ## Number of rows under H0
+#' n.h1 <- 500 ## Number of rows under H1
+#' n.h0 <- 500 ## Number of rows under H0
 #' alpha <- 0.05
 #' sample.labels <- c(rep("a", 50), rep("b", 50))
 #' 
@@ -31,6 +32,9 @@
 #' 
 #' ## Add a threshold on the effect size
 #' tTestPerRow.plotVolcano(x.student, legend.corner="topleft", control.type = "p.value", effect.threshold = 0.6)
+#' 
+#' ## Draw volcano plot with status- and density-based colors
+#' tTestPerRow.plotVolcano(x.student, legend.corner="topleft", control.type = "p.value", effect.threshold = 0.6, density.colors=TRUE)
 #' 
 #' ## Draw a Volcano plot with horizontal bars denoting the confidence intervals 
 #' ## around the difference between means
@@ -111,8 +115,9 @@ tTestPerRow.plotVolcano <- function(
 #' @param ylab="sig = -log10(p-value)" Label for the Y axis
 #' @param xlim    Range of the X axis.
 #' @param ylim    Range of the Y axis.
+#' @param density.colors=FALSE Automatically set the colors according to feature status and local density in the Volcano space.
 #' @param col.points='#888888' Color(s) for the points. can be either a single value (same color for all points), or a vector of the same length as the numer of genes (rows) of the input table. 
-#' @param col.positive='#008800' Color to highlight significant points (called positive). When NULL, positive points are not displayed. 
+#' @param col.positive='#4455DD' Color to highlight significant points (called positive). When NULL, positive points are not displayed. 
 #' @param col.lines='blue'  Color for the line highlighting the effect size thresholds.
 #' @param col.alpha="darkred" Color for the line highlighting the significance threshold.
 #' @param col.grid='#AAAAAA'   Grid color
@@ -143,8 +148,9 @@ VolcanoPlot <- function(
   plot.ci=FALSE,
   xlab="Effect size",
   ylab=paste(sep="", "-log10(",control.type,")"),
+  density.colors=FALSE,
   col.points = '#888888',
-  col.positive='#008800',
+  col.positive='#4455DD',
   col.grid = '#AAAAAA',
   col.lines = 'blue',
   col.alpha = "darkred",
@@ -175,23 +181,6 @@ VolcanoPlot <- function(
   ## Apply threshold on effect size if required
   if (!is.null(effect.threshold)) {
     positive[abs(multitest.table[,effect.size.col]) < effect.threshold] <- FALSE
-  }
-  
-  ## Define point colors and shapes. 
-  ## Note: the attributes col.points and pch.points can either be either 
-  ## a single value (for all points) or a  vector with one user-specified 
-  ## color per point.
-  multitest.table$color <- col.points
-  if (length(col.points) != nrow(multitest.table)) {
-    if ((is.na(col.positive)) | (is.null(col.positive))) {
-      multitest.table[positive, "color"] <- rep(NA, times=sum(positive))
-    } else {
-      multitest.table[positive, "color"] <- col.positive
-    }
-  }
-  multitest.table$pch <- pch.negative
-  if (!is.null(pch.positive)) {
-    multitest.table[positive, "pch"] <- pch.positive
   }
   
   ## Sort the table before plotting, to ensure that positive points appear visible on top of negative points
@@ -235,8 +224,35 @@ VolcanoPlot <- function(
     ylim <- c(min(y.values), max(1,y.values))
   }
 
+  ## Define point colors and shapes. 
+  ## Note: the attributes col.points and pch.points can either be either 
+  ## a single value (for all points) or a  vector with one user-specified 
+  ## color per point.
+  if (density.colors) {
+    ## Compute status and density-specific color
+    multitest.table.sorted$status <- "negative"
+    multitest.table.sorted$status[positive] <- "positive"
+    multitest.table.sorted$color <- featureColors(
+      multitest.table.sorted$status, 
+      positions = data.frame(multitest.table.sorted[, effect.size.col],y.values))
+  }  else {
+    multitest.table.sorted$color <- col.points
+    if (length(col.points) != nrow(multitest.table.sorted)) {
+      if ((is.na(col.positive)) | (is.null(col.positive))) {
+        multitest.table.sorted[positive, "color"] <- rep(NA, times=sum(positive))
+      } else {
+        multitest.table.sorted[positive, "color"] <- col.positive
+      }
+    }
+  }
   
-  ## Identify the points above Y limits, to denote them by a different symbol
+  ## Point character for each feature
+  multitest.table.sorted$pch <- pch.negative
+  if (!is.null(pch.positive)) {
+    multitest.table.sorted[positive, "pch"] <- pch.positive
+  }
+  
+  ## Identify the points above Y limits, to denote them by a different symbol and color
   above.ymax <- y.values.ori > ylim[2]
   y.values[above.ymax] <- ylim[2]
   multitest.table.sorted$pch[above.ymax] <- 17
@@ -363,7 +379,7 @@ VolcanoPlot <- function(
              bty="o", bg="white")
     }
   }
-  
+  # return(multitest.table.sorted) ## For debugging
 }
 
 
